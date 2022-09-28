@@ -1,0 +1,6 @@
+01-amd64_fixes.patch
+02-Makefile_fixes.patch
+03-Type_fixes.patch
+04-XLS_parsing_improvements.patch
+05-CVE-2017-11110.patch
+06-Fix_OLENAMELENGTH.patch

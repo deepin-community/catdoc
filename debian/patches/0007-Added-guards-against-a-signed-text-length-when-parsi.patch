@@ -1,0 +1,61 @@
+From: Ali Rizvi-Santiago <arizvisa@gmail.com>
+Date: Fri, 11 Apr 2025 12:08:01 -0500
+Subject: Added guards against a signed text length when parsing the
+ "WordDocument" stream.
+
+---
+ src/analyze.c | 6 ++++--
+ src/reader.c  | 9 ++++++---
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/src/analyze.c b/src/analyze.c
+index 6ed7ea6..2d0c2f9 100644
+--- a/src/analyze.c
++++ b/src/analyze.c
+@@ -96,7 +96,7 @@ int analyze_format(FILE *f) {
+  ********************************************************************/
+ int parse_word_header(unsigned char * buffer,FILE *f,int offset,long curpos) {
+ 	int flags,charset, ret_code=0;
+-	long textstart,textlen,i;
++	long textstart,textstop,textlen,i;
+ 	char buf[2];
+ 	
+ 	if (verbose) {
+@@ -161,7 +161,9 @@ int parse_word_header(unsigned char * buffer,FILE *f,int offset,long curpos) {
+ 	}
+ 	/* skipping to textstart and computing textend */
+ 	textstart=getlong(buffer,24);
+-	textlen=getlong(buffer,28)-textstart;
++	textstop=getlong(buffer,28);
++	textlen=(textstart < textstop)? textstop - textstart : 0;
++
+ 	textstart+=offset;
+ 	if (verbose) {
+ 		printf ("Textstart = %ld (hex %lx)\n",textstart+curpos,textstart+curpos);
+diff --git a/src/reader.c b/src/reader.c
+index d28878b..fd2d4c2 100644
+--- a/src/reader.c
++++ b/src/reader.c
+@@ -96,8 +96,11 @@ int process_file(FILE *f,long stop) {
+ 	long offset=0;
+ 	int hyperlink_mode = 0;
+ 	unsigned short c;
+-	/* Now we are starting to read with get_unicode_char */
+-	while (!catdoc_eof(f) && offset<stop) {
++	/*
++	 * Now we are starting to read with get_unicode_char. We guard against the
++	 * caller giving us a signed "stop" value which would be invalid.
++	 */
++	while (!catdoc_eof(f) && stop >= 0 && offset<stop) {
+ 		bufptr = -1;
+ 		do {
+ 			c=get_unicode_char(f,&offset,stop);
+@@ -173,7 +176,7 @@ int process_file(FILE *f,long stop) {
+ 		} while (bufptr<=PARAGRAPH_BUFFER-2 &&
+ 				 !catdoc_eof(f) &&
+ 				 buffer[bufptr]!=0x000a);
+-		if (bufptr>0) {
++		if ((bufptr>0) && (bufptr < sizeof(buffer) / sizeof(buffer[0]) - 1)) {
+ 			buffer[++bufptr]=0;
+ 			output_paragraph(buffer);
+ 		}

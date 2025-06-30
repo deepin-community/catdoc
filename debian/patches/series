@@ -4,3 +4,6 @@
 04-XLS_parsing_improvements.patch
 05-CVE-2017-11110.patch
 06-Fix_OLENAMELENGTH.patch
+0007-Added-guards-against-a-signed-text-length-when-parsi.patch
+0008-Added-a-guard-against-a-product-overflow-when-proces.patch
+0009-Added-guards-against-invalid-sector-sizes-when-tryin.patch
